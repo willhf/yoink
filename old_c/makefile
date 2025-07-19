@@ -1,7 +1,7 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -O2
+CFLAGS = -Wall -Wextra -g
 TARGET = yoink
-SRC = yoink.c
+SRC = yoink.c 
 
 .PHONY: all clean
 
