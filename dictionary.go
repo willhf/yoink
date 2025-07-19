@@ -61,7 +61,7 @@ func (d *Dictionary) findStealWord(existingWord *WordDoc, lettersInPlay *LetterS
 	return nil
 }
 
-func (d *Dictionary) findMakeWord(lettersInPlay *LetterSet) *WordDoc {
+func (d *Dictionary) findNewWord(lettersInPlay *LetterSet) *WordDoc {
 	numLettersInPlay := lettersInPlay.numLetters()
 	if numLettersInPlay < d.minWordLength {
 		return nil

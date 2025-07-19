@@ -103,7 +103,7 @@ func (g *Game) playTurn(playerIndex int) (actionTaken bool) {
 		}
 	}
 
-	makeWord := g.dictionary.findMakeWord(&g.lettersInPlay)
+	makeWord := g.dictionary.findNewWord(&g.lettersInPlay)
 	if makeWord != nil {
 		if g.logTurns {
 			fmt.Printf("%sNEW WORD! %s makes word '%s'\n",
