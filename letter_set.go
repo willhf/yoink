@@ -1,6 +1,8 @@
 package main
 
-import "bytes"
+import (
+	"bytes"
+)
 
 const NUM_LETTERS = 26
 
@@ -28,6 +30,40 @@ func (ls *LetterSet) IsSubsetOf(other *LetterSet) bool {
 		}
 	}
 	return true
+}
+
+func (ls *LetterSet) String() string {
+	buf := bytes.Buffer{}
+	for i := 0; i < NUM_LETTERS; i++ {
+		for j := 0; j < int(ls.letters[i]); j++ {
+			buf.WriteString(string(rune(i + 'a')))
+		}
+	}
+	return buf.String()
+}
+
+func (ls *LetterSet) addLetter(letter byte) {
+	ls.letters[letter-'a']++
+}
+
+func (ls *LetterSet) addLetterSet(other *LetterSet) {
+	for i := 0; i < NUM_LETTERS; i++ {
+		ls.letters[i] += other.letters[i]
+	}
+}
+
+func (ls *LetterSet) diff(other *LetterSet) LetterSet {
+	diff := LetterSet{}
+	for i := 0; i < NUM_LETTERS; i++ {
+		diff.letters[i] = ls.letters[i] - other.letters[i]
+	}
+	return diff
+}
+
+func (ls *LetterSet) removeLetterSet(other *LetterSet) {
+	for i := 0; i < NUM_LETTERS; i++ {
+		ls.letters[i] -= other.letters[i]
+	}
 }
 
 func (ls *LetterSet) IsEqual(other *LetterSet) bool {

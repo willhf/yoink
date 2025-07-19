@@ -3,8 +3,10 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"fmt"
 	"io"
 	"sort"
+	"strings"
 )
 
 // WordKey is the index into Dictionary.wordsSorted
@@ -25,6 +27,43 @@ type Dictionary struct {
 	letterSets               []LetterSet
 	anagramsByLetterSetIndex []WordAnagramIndexes
 	wordsSorted              []WordDoc
+}
+
+func (d *Dictionary) findStealWord(existingWord *WordDoc, lettersInPlay *LetterSet) *WordDoc {
+	existingWordLetterSet := &existingWord.letterSet
+
+	var allLetters LetterSet
+	allLetters.addLetterSet(lettersInPlay)
+	allLetters.addLetterSet(existingWordLetterSet)
+
+	for idx, ls := range d.letterSets {
+		if existingWordLetterSet.IsSubsetOf(&ls) && ls.IsSubsetOf(&allLetters) {
+			wordIndexes := d.anagramsByLetterSetIndex[idx]
+			for i := wordIndexes.start; i <= wordIndexes.end; i++ {
+				candidate := d.wordsSorted[i]
+				// NOTE! this strings.Contains is not precisely correct.
+				// The rules say that the nature of the word must change:
+				// 'engine' can't become 'engines', which this substring check prevents,
+				// but this substring check prevents some valid transformations like
+				// stealing 'quit' to become 'equity'
+				if !strings.Contains(candidate.word, existingWord.word) && candidate.length > existingWord.length {
+					return &d.wordsSorted[i]
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+func (d *Dictionary) findMakeWord(lettersInPlay *LetterSet) *WordDoc {
+	for idx, ls := range d.letterSets {
+		if ls.IsSubsetOf(lettersInPlay) {
+			wordIndexes := d.anagramsByLetterSetIndex[idx]
+			return &d.wordsSorted[wordIndexes.start]
+		}
+	}
+	return nil
 }
 
 func NewDictionary(r io.Reader, minWordLength int) *Dictionary {
@@ -72,16 +111,16 @@ func NewDictionary(r io.Reader, minWordLength int) *Dictionary {
 	return d
 }
 
-// func (d *Dictionary) print() {
-// 	for i := 0; i < len(dict.anagramsByLetterSetIndex); i++ {
-// 		indexes := dict.anagramsByLetterSetIndex[i]
-// 		start := indexes.start
-// 		end := indexes.end
-// 		words := []string{}
-// 		for j := start; j <= end; j++ {
-// 			words = append(words, dict.wordsSorted[j].word)
-// 		}
-// 		fmt.Println(strings.Join(words, " "))
+func (d *Dictionary) print() {
+	for i := 0; i < len(d.anagramsByLetterSetIndex); i++ {
+		indexes := d.anagramsByLetterSetIndex[i]
+		start := indexes.start
+		end := indexes.end
+		words := []string{}
+		for j := start; j <= end; j++ {
+			words = append(words, d.wordsSorted[j].word)
+		}
+		fmt.Println(strings.Join(words, " "))
 
-// 	}
-// }
+	}
+}
