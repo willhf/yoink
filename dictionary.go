@@ -14,15 +14,17 @@ type WordDoc struct {
 	letterSet LetterSet
 }
 
-type WordAnagramIndexes struct {
+type IndexRange struct {
 	start int // inclusive
 	end   int // inclusive
 }
 
 type Dictionary struct {
+	minWordLength            int
 	letterSets               []LetterSet
-	anagramsByLetterSetIndex []WordAnagramIndexes
+	anagramsByLetterSetIndex []IndexRange
 	wordsSorted              []WordDoc
+	letterSetsByWordLength   map[int]IndexRange
 }
 
 func (d *Dictionary) findStealWord(existingWord *WordDoc, lettersInPlay *LetterSet) *WordDoc {
@@ -32,7 +34,14 @@ func (d *Dictionary) findStealWord(existingWord *WordDoc, lettersInPlay *LetterS
 	allLetters.addLetterSet(lettersInPlay)
 	allLetters.addLetterSet(existingWordLetterSet)
 
-	for idx, ls := range d.letterSets {
+	// no reason to examine any word that is longer than the total number of letters we have
+	start := d.letterSetsByWordLength[allLetters.numLetters()].start
+
+	// no reason to examine any word that is shorter than existingWord
+	end := d.letterSetsByWordLength[existingWord.length].end
+
+	for idx := start; idx <= end; idx++ {
+		ls := d.letterSets[idx]
 		if existingWordLetterSet.IsSubsetOf(&ls) && ls.IsSubsetOf(&allLetters) {
 			wordIndexes := d.anagramsByLetterSetIndex[idx]
 			for i := wordIndexes.start; i <= wordIndexes.end; i++ {
@@ -53,7 +62,15 @@ func (d *Dictionary) findStealWord(existingWord *WordDoc, lettersInPlay *LetterS
 }
 
 func (d *Dictionary) findMakeWord(lettersInPlay *LetterSet) *WordDoc {
-	for idx, ls := range d.letterSets {
+	numLettersInPlay := lettersInPlay.numLetters()
+	if numLettersInPlay < d.minWordLength {
+		return nil
+	}
+	// no reason to examine any word that is longer than the total number of letters we have
+	start := d.letterSetsByWordLength[numLettersInPlay].start
+
+	for idx := start; idx < len(d.letterSets); idx++ {
+		ls := d.letterSets[idx]
 		if ls.IsSubsetOf(lettersInPlay) {
 			wordIndexes := d.anagramsByLetterSetIndex[idx]
 			return &d.wordsSorted[wordIndexes.start]
@@ -63,7 +80,7 @@ func (d *Dictionary) findMakeWord(lettersInPlay *LetterSet) *WordDoc {
 }
 
 func NewDictionary(r io.Reader, minWordLength int) *Dictionary {
-	d := &Dictionary{}
+	d := &Dictionary{minWordLength: minWordLength}
 
 	words := []WordDoc{}
 	scanner := bufio.NewScanner(r)
@@ -88,7 +105,7 @@ func NewDictionary(r io.Reader, minWordLength int) *Dictionary {
 	})
 
 	d.wordsSorted = words
-	d.anagramsByLetterSetIndex = make([]WordAnagramIndexes, 0, len(words))
+	d.anagramsByLetterSetIndex = make([]IndexRange, 0, len(words))
 	d.letterSets = make([]LetterSet, 0, len(words))
 
 	numLetterSets := 0
@@ -97,11 +114,22 @@ func NewDictionary(r io.Reader, minWordLength int) *Dictionary {
 		if i == 0 || !word.letterSet.IsEqual(&d.letterSets[numLetterSets-1]) {
 			numLetterSets++
 			d.letterSets = append(d.letterSets, word.letterSet)
-			indexes := WordAnagramIndexes{start: i, end: i}
+			indexes := IndexRange{start: i, end: i}
 			d.anagramsByLetterSetIndex = append(d.anagramsByLetterSetIndex, indexes)
 		} else {
 			d.anagramsByLetterSetIndex[numLetterSets-1].end++
 		}
+	}
+
+	d.letterSetsByWordLength = make(map[int]IndexRange)
+	for i := 0; i < len(d.letterSets); i++ {
+		numLetters := d.letterSets[i].numLetters()
+		rng := d.letterSetsByWordLength[numLetters]
+		if rng.start == 0 {
+			rng.start = i
+		}
+		rng.end = i
+		d.letterSetsByWordLength[numLetters] = rng
 	}
 
 	return d

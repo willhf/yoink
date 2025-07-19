@@ -20,30 +20,28 @@ func (p *Player) score() int {
 
 func (p *Player) addWord(word *WordDoc) {
 	p.words = append(p.words, word)
+	p.sortWordsByLengthDescending()
 }
 
 func (p *Player) removeWord(word *WordDoc) {
 	for i, w := range p.words {
 		if w == word {
 			p.words = append(p.words[:i], p.words[i+1:]...)
-			return
+			break
 		}
 	}
+	p.sortWordsByLengthDescending()
 }
 
-func (p *Player) wordsByLengthDescending() []*WordDoc {
-	words := make([]*WordDoc, len(p.words))
-	copy(words, p.words)
-	sort.Slice(words, func(i, j int) bool {
-		return words[i].length > words[j].length
+func (p *Player) sortWordsByLengthDescending() {
+	sort.Slice(p.words, func(i, j int) bool {
+		return p.words[i].length > p.words[j].length
 	})
-	return words
 }
 
 func (p *Player) getWordsString() string {
-	words := p.wordsByLengthDescending()
 	wordsString := ""
-	for _, word := range words {
+	for _, word := range p.words {
 		wordsString += word.word + " "
 	}
 	return wordsString
@@ -86,7 +84,7 @@ func (g *Game) playTurn(playerIndex int) (actionTaken bool) {
 	otherPlayers := g.getOtherPlayers(playerIndex)
 	for _, otherPlayerIndex := range otherPlayers {
 		otherPlayer := g.players[otherPlayerIndex]
-		candidateWords := otherPlayer.wordsByLengthDescending()
+		candidateWords := otherPlayer.words
 		for _, candidateWord := range candidateWords {
 			stealWord := g.dictionary.findStealWord(candidateWord, &g.lettersInPlay)
 			if stealWord != nil {

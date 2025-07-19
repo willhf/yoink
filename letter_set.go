@@ -46,6 +46,14 @@ func (ls *LetterSet) addLetter(letter byte) {
 	ls.letters[letter-'a']++
 }
 
+func (ls *LetterSet) numLetters() int {
+	numLetters := 0
+	for i := 0; i < NUM_LETTERS; i++ {
+		numLetters += int(ls.letters[i])
+	}
+	return numLetters
+}
+
 func (ls *LetterSet) addLetterSet(other *LetterSet) {
 	for i := 0; i < NUM_LETTERS; i++ {
 		ls.letters[i] += other.letters[i]
