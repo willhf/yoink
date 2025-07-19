@@ -79,13 +79,30 @@ func (g *Game) getOtherPlayers(playerIndex int) []int {
 
 var turnIndentationPrefix = "   "
 
-func (g *Game) playTurn(playerIndex int) (actionTaken bool) {
+type TurnCache map[string]struct{}
+
+func (tc TurnCache) contains(s string) bool {
+	_, ok := tc[s]
+	return ok
+}
+
+func (tc TurnCache) add(s string) {
+	tc[s] = struct{}{}
+}
+
+func (g *Game) playTurn(playerIndex int, turnCache TurnCache) (actionTaken bool) {
 	player := g.players[playerIndex]
+	lettersInPlayString := g.lettersInPlay.String()
 	otherPlayers := g.getOtherPlayers(playerIndex)
 	for _, otherPlayerIndex := range otherPlayers {
 		otherPlayer := g.players[otherPlayerIndex]
 		candidateWords := otherPlayer.words
 		for _, candidateWord := range candidateWords {
+			cacheKey := candidateWord.word + "." + lettersInPlayString
+			if turnCache.contains(cacheKey) {
+				continue
+			}
+			turnCache.add(cacheKey)
 			stealWord := g.dictionary.findStealWord(candidateWord, &g.lettersInPlay)
 			if stealWord != nil {
 				// todo maybe make this faster
@@ -103,6 +120,11 @@ func (g *Game) playTurn(playerIndex int) (actionTaken bool) {
 		}
 	}
 
+	if turnCache.contains(lettersInPlayString) {
+		return false
+	}
+	turnCache.add(lettersInPlayString)
+
 	makeWord := g.dictionary.findNewWord(&g.lettersInPlay)
 	if makeWord != nil {
 		if g.logTurns {
@@ -119,6 +141,7 @@ func (g *Game) playTurn(playerIndex int) (actionTaken bool) {
 
 func (g *Game) play() {
 	for turnNumber := 0; turnNumber < len(g.lettersToFlip); turnNumber++ {
+		turnCache := TurnCache{}
 		letter := g.lettersToFlip[turnNumber]
 		g.lettersInPlay.addLetter(letter)
 		if g.logTurns {
@@ -126,7 +149,7 @@ func (g *Game) play() {
 		}
 		playersWhoTookNoAction := map[int]struct{}{}
 		for playerIndex := g.nextPlayer(turnNumber); len(playersWhoTookNoAction) < len(g.players); playerIndex = g.nextPlayer(playerIndex) {
-			actionTaken := g.playTurn(playerIndex)
+			actionTaken := g.playTurn(playerIndex, turnCache)
 			if !actionTaken {
 				playersWhoTookNoAction[playerIndex] = struct{}{}
 			} else {
