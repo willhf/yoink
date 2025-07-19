@@ -18,16 +18,10 @@ func main() {
 	minWordLength := flag.Int("min-word-length", 4, "the minimum word length")
 	flag.Parse()
 
-	dictionaryFile, err := os.Open(*dictionaryPath)
+	dict, err := newDictionaryFromFile(*dictionaryPath, *minWordLength)
 	if err != nil {
-		fmt.Println("Error opening dictionary file:", err)
+		fmt.Fprintln(os.Stderr, "Error opening dictionary file:", err)
 		os.Exit(1)
-	}
-	defer dictionaryFile.Close()
-
-	dict := NewDictionary(dictionaryFile, *minWordLength)
-	if dict == nil {
-		fmt.Println("nil dict")
 	}
 
 	flipOrder := inputLetterDistribution.toFlipOrder(*seed)

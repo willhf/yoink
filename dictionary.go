@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"io"
+	"os"
 	"sort"
 	"strings"
 )
@@ -77,6 +78,16 @@ func (d *Dictionary) findNewWord(lettersInPlay *LetterSet) *WordDoc {
 		}
 	}
 	return nil
+}
+
+func newDictionaryFromFile(path string, minWordLength int) (*Dictionary, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	return NewDictionary(file, minWordLength), nil
 }
 
 func NewDictionary(r io.Reader, minWordLength int) *Dictionary {
