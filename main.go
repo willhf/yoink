@@ -13,6 +13,9 @@ var inputLetterDistribution = LetterSet{
 
 func main() {
 	dictionaryPath := flag.String("dictionary", "", "the location of the dictionary file")
+	logTurns := flag.Bool("log-turns", true, "log each turn")
+	seed := flag.Int("seed", 1234567891, "the seed for the random number generator")
+	minWordLength := flag.Int("min-word-length", 4, "the minimum word length")
 	flag.Parse()
 
 	dictionaryFile, err := os.Open(*dictionaryPath)
@@ -22,14 +25,12 @@ func main() {
 	}
 	defer dictionaryFile.Close()
 
-	minWordLength := 4
-	dict := NewDictionary(dictionaryFile, minWordLength)
+	dict := NewDictionary(dictionaryFile, *minWordLength)
 	if dict == nil {
 		fmt.Println("nil dict")
 	}
 
-	seed := 1234567891
-	flipOrder := inputLetterDistribution.toFlipOrder(seed)
-	game := NewGame(dict, flipOrder, []string{"Alice", "Bob", "Charlie"})
+	flipOrder := inputLetterDistribution.toFlipOrder(*seed)
+	game := NewGame(dict, flipOrder, []string{"Alice", "Bob", "Charlie"}, *logTurns)
 	game.play()
 }

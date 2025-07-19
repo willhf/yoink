@@ -3,14 +3,10 @@ package main
 import (
 	"bufio"
 	"bytes"
-	"fmt"
 	"io"
 	"sort"
 	"strings"
 )
-
-// WordKey is the index into Dictionary.wordsSorted
-type WordKey int
 
 type WordDoc struct {
 	length    int
@@ -109,18 +105,4 @@ func NewDictionary(r io.Reader, minWordLength int) *Dictionary {
 	}
 
 	return d
-}
-
-func (d *Dictionary) print() {
-	for i := 0; i < len(d.anagramsByLetterSetIndex); i++ {
-		indexes := d.anagramsByLetterSetIndex[i]
-		start := indexes.start
-		end := indexes.end
-		words := []string{}
-		for j := start; j <= end; j++ {
-			words = append(words, d.wordsSorted[j].word)
-		}
-		fmt.Println(strings.Join(words, " "))
-
-	}
 }

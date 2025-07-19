@@ -55,15 +55,16 @@ type Game struct {
 	numLettersFlipped int
 	players           []*Player
 	lettersInPlay     LetterSet
+	logTurns          bool
 }
 
-func NewGame(dictionary *Dictionary, lettersToFlip []byte, playerNames []string) *Game {
+func NewGame(dictionary *Dictionary, lettersToFlip []byte, playerNames []string, logTurns bool) *Game {
 	players := []*Player{}
 	for _, name := range playerNames {
 		players = append(players, &Player{name: name})
 	}
 
-	return &Game{dictionary: dictionary, lettersToFlip: lettersToFlip, numLettersFlipped: 0, players: players}
+	return &Game{dictionary: dictionary, lettersToFlip: lettersToFlip, numLettersFlipped: 0, players: players, logTurns: logTurns}
 }
 
 func (g *Game) nextPlayer(playerIndex int) int {
@@ -93,8 +94,10 @@ func (g *Game) playTurn(playerIndex int) (actionTaken bool) {
 				lettersInPlayRemoved := stealWord.letterSet.diff(&candidateWord.letterSet)
 				g.lettersInPlay.removeLetterSet(&lettersInPlayRemoved)
 
-				fmt.Printf("%sSTEAL! %s steals '%s' from %s using new letters '%s' to create '%s'\n",
-					turnIndentationPrefix, player.name, candidateWord.word, otherPlayer.name, lettersInPlayRemoved.String(), stealWord.word)
+				if g.logTurns {
+					fmt.Printf("%sSTEAL! %s steals '%s' from %s using new letters '%s' to create '%s'\n",
+						turnIndentationPrefix, player.name, candidateWord.word, otherPlayer.name, lettersInPlayRemoved.String(), stealWord.word)
+				}
 				player.addWord(stealWord)
 				otherPlayer.removeWord(candidateWord)
 				return true
@@ -104,8 +107,10 @@ func (g *Game) playTurn(playerIndex int) (actionTaken bool) {
 
 	makeWord := g.dictionary.findMakeWord(&g.lettersInPlay)
 	if makeWord != nil {
-		fmt.Printf("%sNEW WORD! %s makes word '%s'\n",
-			turnIndentationPrefix, player.name, makeWord.word)
+		if g.logTurns {
+			fmt.Printf("%sNEW WORD! %s makes word '%s'\n",
+				turnIndentationPrefix, player.name, makeWord.word)
+		}
 		player.addWord(makeWord)
 		g.lettersInPlay.removeLetterSet(&makeWord.letterSet)
 		return true
@@ -118,7 +123,9 @@ func (g *Game) play() {
 	for turnNumber := 0; turnNumber < len(g.lettersToFlip); turnNumber++ {
 		letter := g.lettersToFlip[turnNumber]
 		g.lettersInPlay.addLetter(letter)
-		fmt.Printf("turn %d: flipped '%s', letters in play: '%s'\n", turnNumber, string(letter), g.lettersInPlay.String())
+		if g.logTurns {
+			fmt.Printf("turn %d: flipped '%s', letters in play: '%s'\n", turnNumber, string(letter), g.lettersInPlay.String())
+		}
 		playersWhoTookNoAction := map[int]struct{}{}
 		for playerIndex := g.nextPlayer(turnNumber); len(playersWhoTookNoAction) < len(g.players); playerIndex = g.nextPlayer(playerIndex) {
 			actionTaken := g.playTurn(playerIndex)
@@ -130,12 +137,14 @@ func (g *Game) play() {
 				playersWhoTookNoAction = map[int]struct{}{}
 			}
 		}
-		for _, player := range g.players {
-			fmt.Printf("%s%s: %s\n", turnIndentationPrefix, player.name, player.getWordsString())
+		if g.logTurns {
+			for _, player := range g.players {
+				fmt.Printf("%s%s: %s\n", turnIndentationPrefix, player.name, player.getWordsString())
+			}
 		}
 	}
 
 	for _, player := range g.players {
-		fmt.Println(player.name, "score:", player.score())
+		fmt.Println(player.name, "score:", player.score(), "words:", player.getWordsString())
 	}
 }
