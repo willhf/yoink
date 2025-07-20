@@ -38,12 +38,12 @@ func (d *Dictionary) findStealWord(existingWord *WordDoc, lettersInPlay *LetterS
 	// no reason to examine any word that is longer than the total number of letters we have
 	start := d.letterSetsByWordLength[allLetters.numLetters()].start
 
-	// no reason to examine any word that is shorter than existingWord
-	end := d.letterSetsByWordLength[existingWord.length].end
+	// no reason to examine any word that is shorter than existingWord + 1
+	end := d.letterSetsByWordLength[existingWord.length+1].end
 
 	for idx := start; idx <= end; idx++ {
-		ls := d.letterSets[idx]
-		if existingWordLetterSet.IsSubsetOf(&ls) && ls.IsSubsetOf(&allLetters) {
+		ls := &d.letterSets[idx]
+		if existingWordLetterSet.IsSubsetOf(ls) && ls.IsSubsetOf(&allLetters) {
 			wordIndexes := d.anagramsByLetterSetIndex[idx]
 			for i := wordIndexes.start; i <= wordIndexes.end; i++ {
 				candidate := d.wordsSorted[i]
@@ -52,7 +52,7 @@ func (d *Dictionary) findStealWord(existingWord *WordDoc, lettersInPlay *LetterS
 				// 'engine' can't become 'engines', which this substring check prevents,
 				// but this substring check prevents some valid transformations like
 				// stealing 'quit' to become 'equity'
-				if !strings.Contains(candidate.word, existingWord.word) && candidate.length > existingWord.length {
+				if !strings.Contains(candidate.word, existingWord.word) {
 					return &d.wordsSorted[i]
 				}
 			}
@@ -71,7 +71,7 @@ func (d *Dictionary) findNewWord(lettersInPlay *LetterSet) *WordDoc {
 	start := d.letterSetsByWordLength[numLettersInPlay].start
 
 	for idx := start; idx < len(d.letterSets); idx++ {
-		ls := d.letterSets[idx]
+		ls := &d.letterSets[idx]
 		if ls.IsSubsetOf(lettersInPlay) {
 			wordIndexes := d.anagramsByLetterSetIndex[idx]
 			return &d.wordsSorted[wordIndexes.start]
